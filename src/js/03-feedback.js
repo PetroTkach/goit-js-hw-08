@@ -1,38 +1,38 @@
 import throttle from 'lodash.throttle';
-
-
 const STORAGE_KEY = 'feedback-form-state';
-const refs = {
-  form: document.querySelector('.feedback-form'),
-  textarea: document.querySelector('.feedback-form textarea'),
-  input: document.querySelector('input'),
-};
-const formData = {};
+const formRef = document.querySelector('.feedback-form');
 
-populateTextarea();
+formRef.addEventListener('submit', onFormSubmit);
+formRef.addEventListener('input', throttle(onInputForm, 500));
 
-refs.form.addEventListener('input', throttle(onTextareaInput, 500));
-
-refs.form.addEventListener('submit', e => {
-  e.preventDefault();
-  e.currentTarget.reset();
-  const objData = JSON.parse(localStorage.getItem(STORAGE_KEY));
-  localStorage.removeItem(STORAGE_KEY);
-});
-
-function onTextareaInput(e) {
-  formData[e.target.name] = e.target.value;
-  const stringifiedData = JSON.stringify(formData);
-  localStorage.setItem(STORAGE_KEY, stringifiedData);
+function onInputForm() {
+  const formData = new FormData(formRef);
+  let userForm = {};
+  formData.forEach((value, name) => (userForm[name] = value.trim()));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(userForm));
 }
 
-function populateTextarea() {
-  const savedMessage = JSON.parse(localStorage.getItem(STORAGE_KEY));
+initForm();
+function initForm() {
+  let persistedForm = localStorage.getItem(STORAGE_KEY);
+  if (persistedForm) {
+    persistedForm = JSON.parse(persistedForm);
+    Object.entries(persistedForm).forEach(([name, value]) => {
+      formRef.elements[name].value = value;
+    });
+  }
+}
 
-  if (savedMessage === null) {
-    // console.log(savedMessage);
+function onFormSubmit(evt) {
+  evt.preventDefault();
+  const inputName = formRef.email.value;
+  const inputMessage = formRef.message.value;
+  if (inputName && inputMessage !== '') {
+    let userForm = localStorage.getItem(STORAGE_KEY);
+    userForm = JSON.parse(userForm);
+    console.log('Отправляем форму с такими данными', userForm);
+    localStorage.removeItem(STORAGE_KEY);
+    evt.currentTarget.reset();
     return;
   }
-  refs.textarea.value = savedMessage['message'] || '';
-  refs.input.value = savedMessage['email'] || '';
 }
